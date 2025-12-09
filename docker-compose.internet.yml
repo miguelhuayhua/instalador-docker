@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 16
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: midb
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  # MinIO
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin123
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+
+  # Next.js App - Build desde carpeta local
+  nextjs:
+    image: miguelhuayhua/nextjs-app:latest  # Descarga directamente
+    container_name: nextjs
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      # Database
+      DATABASE_URL: postgresql://admin:admin123@postgres:5432/midb
+      
+      # MinIO
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: admin
+      MINIO_SECRET_KEY: admin123
+      
+      # Clerk Authentication
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_dXAtc2Vhc25haWwtODguY2xlcmsuYWNjb3VudHMuZGV2JA
+      CLERK_SECRET_KEY: sk_test_cnUXAQcD5vA5vsCcEcYxoObEwSyt1nWEXmDG2gGNSw
+      NEXT_PUBLIC_CLERK_SIGN_IN_URL: /
+      
+      # Billing
+      BILLING_PLAN_ENV: dev
+      
+      # Node
+      NODE_ENV: production
+    depends_on:
+      - postgres
+      - minio
+
+volumes:
+  postgres-data:
+  minio-data:
