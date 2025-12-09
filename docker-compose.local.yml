@@ -30,19 +30,12 @@ services:
       - minio-data:/data
     command: server /data --console-address ":9001"
 
-  prisma-migrate:
-    image: miguelhuayhua/nextjs-app:latest
-    container_name: prisma-migrate
-    command: sh -c "sleep 5 && npx prisma db push"
-    environment:
-      DATABASE_URL: postgresql://admin:admin123@postgres:5432/midb
-    depends_on:
-      - postgres
-    restart: on-failure:3
-
   # Next.js App - Build desde carpeta local
   nextjs:
-    image: miguelhuayhua/nextjs-app:latest  # Descarga directamente
+    build:
+      context: ./proyecto-nextjs
+      dockerfile: Dockerfile
+    image: nextjs-app:local
     container_name: nextjs
     restart: always
     ports:
