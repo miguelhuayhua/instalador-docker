@@ -1,5 +1,4 @@
-version: '3.8'
-
+# Elimina la línea 'version: '3.8'' si quieres (es solo advertencia, no error)
 services:
   postgres:
     image: postgres:16-alpine
@@ -33,16 +32,11 @@ services:
     volumes:
       - minio-data:/data
     command: server /data --console-address ":9001"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
 
   nextjs:
     image: miguelhuayhua/nextjs-app:latest
     container_name: nextjs
-    restart: on-failure
+    restart: unless-stopped  # Cambiado para mejor control
     ports:
       - "3000:3000"
     environment:
@@ -56,28 +50,32 @@ services:
       NEXT_PUBLIC_CLERK_SIGN_IN_URL: /
       BILLING_PLAN_ENV: dev
       NODE_ENV: production
-    # Script de inicio limpio que solo hace migraciones y luego inicia
-    entrypoint: ["/bin/sh", "-c"]
-    command: |
-      # Ejecutar migraciones primero
-      echo "Running Prisma database migrations..."
-      npx prisma db push
-      
-      # Iniciar la aplicación
-      echo "Starting Next.js application..."
-      exec npm start
+    # ¡ESTO ES LO IMPORTANTE! - Comando corregido:
+    command: >
+      sh -c "
+        echo 'Waiting for PostgreSQL to be ready...'
+        # Esperar a que PostgreSQL esté realmente listo
+        sleep 10
+        
+        echo 'Running Prisma migrations...'
+        npx prisma db push
+        
+        echo 'Starting Next.js application...'
+        # Usar exec para reemplazar el shell con npm start
+        exec npm start
+      "
     depends_on:
       postgres:
         condition: service_healthy
       minio:
         condition: service_started
-    # HEALTHCHECK para Next.js (opcional pero recomendado)
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    # Quita el healthcheck por ahora para debugging
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 40s
 
 volumes:
   postgres-data:
