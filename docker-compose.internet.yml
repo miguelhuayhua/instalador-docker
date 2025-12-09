@@ -1,4 +1,3 @@
-# Elimina la línea 'version: '3.8'' si quieres (es solo advertencia, no error)
 services:
   postgres:
     image: postgres:16-alpine
@@ -13,11 +12,10 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d midb"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 30s
+      retries: 10
 
   minio:
     image: minio/minio:latest
@@ -34,9 +32,9 @@ services:
     command: server /data --console-address ":9001"
 
   nextjs:
-    image: miguelhuayhua/nextjs-app:latest
+    build: .
     container_name: nextjs
-    restart: unless-stopped  # Cambiado para mejor control
+    restart: always
     ports:
       - "3000:3000"
     environment:
@@ -50,32 +48,25 @@ services:
       NEXT_PUBLIC_CLERK_SIGN_IN_URL: /
       BILLING_PLAN_ENV: dev
       NODE_ENV: production
-    # ¡ESTO ES LO IMPORTANTE! - Comando corregido:
-    command: >
-      sh -c "
-        echo 'Waiting for PostgreSQL to be ready...'
-        # Esperar a que PostgreSQL esté realmente listo
-        sleep 10
-        
-        echo 'Running Prisma migrations...'
-        npx prisma db push
-        
-        echo 'Starting Next.js application...'
-        # Usar exec para reemplazar el shell con npm start
-        exec npm start
-      "
     depends_on:
       postgres:
         condition: service_healthy
       minio:
         condition: service_started
-    # Quita el healthcheck por ahora para debugging
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    #   start_period: 40s
+    # Espera simple sin pg_isready
+    command: >
+      sh -c "
+        # Esperar unos segundos a que Postgres esté listo
+        sleep 10
+        
+        # Ejecutar migraciones
+        echo 'Running Prisma migrations...'
+        npx prisma db push
+        
+        # Iniciar aplicación
+        echo 'Starting Next.js...'
+        npm start
+      "
 
 volumes:
   postgres-data:
