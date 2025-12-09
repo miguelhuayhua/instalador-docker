@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # PostgreSQL 16
   postgres:
     image: postgres:16-alpine
     container_name: postgres
@@ -14,8 +13,12 @@ services:
       POSTGRES_DB: midb
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  # MinIO
   minio:
     image: minio/minio:latest
     container_name: minio
@@ -33,43 +36,38 @@ services:
   prisma-migrate:
     image: miguelhuayhua/nextjs-app:latest
     container_name: prisma-migrate
-    command: sh -c "sleep 5 && npx prisma db push"
+    command: sh -c "npx prisma db push"
     environment:
       DATABASE_URL: postgresql://admin:admin123@postgres:5432/midb
     depends_on:
-      - postgres
-    restart: on-failure:3
+      postgres:
+        condition: service_healthy
+    restart: "no"
 
-  # Next.js App - Build desde carpeta local
   nextjs:
-    image: miguelhuayhua/nextjs-app:latest  # Descarga directamente
+    image: miguelhuayhua/nextjs-app:latest
     container_name: nextjs
     restart: always
     ports:
       - "3000:3000"
     environment:
-      # Database
       DATABASE_URL: postgresql://admin:admin123@postgres:5432/midb
-      
-      # MinIO
       MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: admin
       MINIO_SECRET_KEY: admin123
-      
-      # Clerk Authentication
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_dXAtc2Vhc25haWwtODguY2xlcmsuYWNjb3VudHMuZGV2JA
       CLERK_SECRET_KEY: sk_test_cnUXAQcD5vA5vsCcEcYxoObEwSyt1nWEXmDG2gGNSw
       NEXT_PUBLIC_CLERK_SIGN_IN_URL: /
-      
-      # Billing
       BILLING_PLAN_ENV: dev
-      
-      # Node
       NODE_ENV: production
     depends_on:
-      - postgres
-      - minio
+      prisma-migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
 
 volumes:
   postgres-data:
