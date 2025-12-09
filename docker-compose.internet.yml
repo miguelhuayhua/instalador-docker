@@ -14,10 +14,11 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U admin -d midb"]
+      interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
   minio:
     image: minio/minio:latest
@@ -32,22 +33,16 @@ services:
     volumes:
       - minio-data:/data
     command: server /data --console-address ":9001"
-
-  prisma-migrate:
-    image: miguelhuayhua/nextjs-app:latest
-    container_name: prisma-migrate
-    command: sh -c "npx prisma db push"
-    environment:
-      DATABASE_URL: postgresql://admin:admin123@postgres:5432/midb
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
 
   nextjs:
     image: miguelhuayhua/nextjs-app:latest
     container_name: nextjs
-    restart: always
+    restart: on-failure
     ports:
       - "3000:3000"
     environment:
@@ -61,13 +56,28 @@ services:
       NEXT_PUBLIC_CLERK_SIGN_IN_URL: /
       BILLING_PLAN_ENV: dev
       NODE_ENV: production
+    # Script de inicio limpio que solo hace migraciones y luego inicia
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      # Ejecutar migraciones primero
+      echo "Running Prisma database migrations..."
+      npx prisma db push
+      
+      # Iniciar la aplicación
+      echo "Starting Next.js application..."
+      exec npm start
     depends_on:
-      prisma-migrate:
-        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       minio:
         condition: service_started
+    # HEALTHCHECK para Next.js (opcional pero recomendado)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   postgres-data:
