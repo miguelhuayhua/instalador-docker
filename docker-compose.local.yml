@@ -32,10 +32,7 @@ services:
 
   # Next.js App - Build desde carpeta local
   nextjs:
-    build:
-      context: ./proyecto-nextjs
-      dockerfile: Dockerfile
-    image: nextjs-app:local
+    image: nextjs-app:latest
     container_name: nextjs
     restart: always
     ports:
