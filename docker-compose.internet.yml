@@ -11,11 +11,11 @@ services:
       POSTGRES_DB: midb
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U admin -d midb"]  # AÑADE -d midb
+    interval: 5s
+    timeout: 5s
+    retries: 10
 
   minio:
     image: minio/minio:latest
