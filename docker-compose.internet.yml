@@ -26,7 +26,7 @@ services:
       - "9001:9001"
     environment:
       MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: admin123
+      MINIO_ROOT_PASSWORD: password123
     volumes:
       - minio-data:/data
     command: server /data --console-address ":9001"
@@ -42,7 +42,7 @@ services:
       MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: admin
-      MINIO_SECRET_KEY: admin123
+      MINIO_SECRET_KEY: password123
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_dXAtc2Vhc25haWwtODguY2xlcmsuYWNjb3VudHMuZGV2JA
       CLERK_SECRET_KEY: sk_test_cnUXAQcD5vA5vsCcEcYxoObEwSyt1nWEXmDG2gGNSw
       NEXT_PUBLIC_CLERK_SIGN_IN_URL: /
