@@ -15,23 +15,24 @@ services:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d midb"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 5s      # Más rápido
+      timeout: 3s       # Más corto
+      retries: 10       # Más intentos
 
   minio:
     image: minio/minio:latest
     container_name: minio
     restart: unless-stopped
     ports:
-      - "9000:9000"  # API/S3 (para tu aplicación)
-      - "9001:9001"  # Consola Web (para ver archivos)
+      - "9000:9000"    # API S3 (para tu app)
+      - "9001:9001"    # Consola web (opcional, para administrar)
     environment:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: password123
     volumes:
       - minio-data:/data
     command: server /data --console-address ":9001"
+    # Sin healthcheck - MinIO arranca rápido
 
   nextjs:
     image: miguelhuayhua/nextjs-app:latest
@@ -40,23 +41,33 @@ services:
     ports:
       - "3000:3000"
     environment:
+      # Database
       DATABASE_URL: postgresql://admin:admin123@postgres:5432/midb
-      MINIO_ENDPOINT: minio
+      
+      # MinIO - configuración CORRECTA para localhost
+      MINIO_ENDPOINT: localhost          # ← CRÍTICO: desde navegador es localhost
       MINIO_PORT: 9000
+      MINIO_USE_SSL: 'false'
       MINIO_ACCESS_KEY: admin
       MINIO_SECRET_KEY: password123
+      MINIO_BUCKET_NAME: medios
+      
+      # URL pública para imágenes en HTML
+      NEXT_PUBLIC_MINIO_URL: http://localhost:9000
+      NEXT_PUBLIC_MINIO_BUCKET: medios
+      
+      # Clerk (mantener)
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_dXAtc2Vhc25haWwtODguY2xlcmsuYWNjb3VudHMuZGV2JA
       CLERK_SECRET_KEY: sk_test_cnUXAQcD5vA5vsCcEcYxoObEwSyt1nWEXmDG2gGNSw
       NEXT_PUBLIC_CLERK_SIGN_IN_URL: /
+      
+      # Otros
       BILLING_PLAN_ENV: dev
       NODE_ENV: production
     depends_on:
-      postgres:
-        condition: service_healthy
-      minio:
-        condition: service_started
-    # NO comando especial - solo usar el CMD del Dockerfile
-    # Sin migraciones automáticas
+      - postgres
+      - minio
+    # NO command adicional - usa el CMD de la imagen
 
 volumes:
   postgres-data:
