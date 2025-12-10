@@ -1,8 +1,10 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: postgres
-    restart: always
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
@@ -12,15 +14,15 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d midb"]  # AÑADE -d midb
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U admin -d midb"]
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
 
   minio:
     image: minio/minio:latest
     container_name: minio
-    restart: always
+    restart: unless-stopped
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -32,9 +34,9 @@ services:
     command: server /data --console-address ":9001"
 
   nextjs:
-    image: miguelhuayhua/nextjs-app:latest
+    build: .
     container_name: nextjs
-    restart: always
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
@@ -53,19 +55,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-    # Espera simple sin pg_isready
-
-  migrations:
-    image: miguelhuayhua/nextjs-app:latest
-    container_name: migrations
-    environment:
-      DATABASE_URL: postgresql://admin:admin123@postgres:5432/midb
-      NODE_ENV: production
-    depends_on:
-      postgres:
-        condition: service_healthy
-    command: npx prisma db push
-    restart: "no"  # No se reinicia automáticamente
+    # NO comando especial - solo usar el CMD del Dockerfile
+    # Sin migraciones automáticas
 
 volumes:
   postgres-data:
