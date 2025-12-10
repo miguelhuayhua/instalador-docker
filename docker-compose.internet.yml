@@ -19,19 +19,20 @@ services:
       timeout: 5s
       retries: 5
 
-  minio:
-    image: minio/minio:latest
-    container_name: minio
-    restart: unless-stopped
-    ports:
-      - "9000:9000"
-    environment:
-      MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: password123
-    volumes:
-      - minio-data:/data
-    command: server /data --console-address ":9000"
-
+minio:
+  image: minio/minio:latest
+  container_name: minio
+  restart: unless-stopped
+  ports:
+    - "9000:9000"  # API/S3 (para tu aplicación)
+    - "9001:9001"  # Consola Web (para ver archivos)
+  environment:
+    MINIO_ROOT_USER: admin
+    MINIO_ROOT_PASSWORD: password123
+  volumes:
+    - minio-data:/data
+  command: server /data --console-address ":9001"
+  
   nextjs:
     image: miguelhuayhua/nextjs-app:latest
     container_name: nextjs
