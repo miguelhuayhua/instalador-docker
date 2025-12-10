@@ -45,7 +45,7 @@ services:
       DATABASE_URL: postgresql://admin:admin123@postgres:5432/midb
       
       # MinIO - configuración CORRECTA para localhost
-      MINIO_ENDPOINT: localhost          # ← CRÍTICO: desde navegador es localhost
+      MINIO_ENDPOINT: minio          # ← CRÍTICO: desde navegador es localhost
       MINIO_PORT: 9000
       MINIO_USE_SSL: 'false'
       MINIO_ACCESS_KEY: admin
