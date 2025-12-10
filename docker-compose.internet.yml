@@ -54,19 +54,18 @@ services:
       minio:
         condition: service_started
     # Espera simple sin pg_isready
-    command: >
-      sh -c "
-        # Esperar unos segundos a que Postgres esté listo
-        sleep 10
-        
-        # Ejecutar migraciones
-        echo 'Running Prisma migrations...'
-        npx prisma db push
-        
-        # Iniciar aplicación
-        echo 'Starting Next.js...'
-        npm start
-      "
+
+  migrations:
+    image: miguelhuayhua/nextjs-app:latest
+    container_name: migrations
+    environment:
+      DATABASE_URL: postgresql://admin:admin123@postgres:5432/midb
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: npx prisma db push
+    restart: "no"  # No se reinicia automáticamente
 
 volumes:
   postgres-data:
