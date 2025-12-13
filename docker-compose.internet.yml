@@ -35,7 +35,7 @@ services:
     # Sin healthcheck - MinIO arranca rápido
 
   nextjs:
-    image: miguelhuayhua/nextjs-app:latest
+    image: miguelhuayhua/u-dent:main
     container_name: nextjs
     restart: unless-stopped
     ports:
