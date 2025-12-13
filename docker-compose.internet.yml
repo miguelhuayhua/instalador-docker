@@ -51,7 +51,9 @@ services:
       MINIO_ACCESS_KEY: admin
       MINIO_SECRET_KEY: password123
       MINIO_BUCKET_NAME: medios
-      
+      NEXTAUTH_URL: localhost:3000
+      NEXTAUTH_SECRET: aVerySecretSecretKey123
+
       # URL pública para imágenes en HTML
       NEXT_PUBLIC_MINIO_URL: http://localhost:9000
       NEXT_PUBLIC_MINIO_BUCKET: medios
